@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 BCPU Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <h1>ESP32 BCPU Server</h1>
+</body>
+
+<div class="led-box">
+  <div class="led-blue" id="CLK_led"></div>
+  <p>CLK</p>
+</div>
+<script>
+  setInterval(function()
+  {
+    getCLK();
+  }, 10000); //33 ms update rate
+  function getCLK()
+  {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() 
+    {
+      if (this.readyState == 4 && this.status == 200) 
+      {
+        if(this.responseText == "ON")
+        {
+          document.getElementById("CLK_led").style.backgroundColor = "#4f8aff";
+        }
+        else if(this.responseText == "OFF")
+        {
+          document.getElementById("CLK_led").style.backgroundColor = "#000000";
+        }
+      }
+    };
+    xhttp.open("GET", "/readCLK", true);
+    xhttp.send();
+  }
+</script>
+
+<div class="flex-container"><!---------------------- flex-container ---------------------->
+
+<div class="container-RUN_STATE"><!---------------------- container-RUN_STATE ---------------------->
+<p>BCPU State: <span id="hlt_state"></span></p>
+<label class="hlt_switch">
+  <input type="checkbox" onchange="toggleHALT(this)" id="hlt_gpio"><span class="hlt_slider"></span>
+</label>
+<script>
+  var output_state = document.getElementById("hlt_state");
+  output_state.innerHTML = "RUN";
+
+  function toggleHALT(element)
+  {
+    var xhr = new XMLHttpRequest();
+
+    if(element.checked)
+    {
+      xhr.open("GET", "/gpio?output=" + element.id + "&state=1", true); 
+      output_state.innerHTML = "HALT";
+    }
+    else 
+    {
+      xhr.open("GET", "/gpio?output=" + element.id + "&state=0", true); 
+      output_state.innerHTML = "RUN";
+    }
+    xhr.send();
+  }
+</script>
+
+<p> </p>
+<button class="button reset_button" onclick="resetBCPU(this)" id="reset_button"> Reset BCPU </button>
+<script>  
+  function resetBCPU(element)
+  {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "/gpio?button=" + element.id, true);
+    xhr.send();
+  }
+</script>
+</div><!---------------------- container-RUN_STATE ---------------------->
+
+<div class="container-CLK_CONTROL"> <!---------------------- container-CLK_CONTROL ---------------------->
+<p>SCLK: <span id="sclk_state"></span></p>
+<label class="sclk_switch">
+  <input type="checkbox" onchange="toggleSCLK(this)" id="sclk_gpio"><span class="sclk_slider"></span>
+</label>
+<script>
+  var sclk_state = document.getElementById("sclk_state");
+  sclk_state.innerHTML = "automatic";
+
+  function toggleSCLK(element) 
+  {
+    var xhr = new XMLHttpRequest();
+
+    if(element.checked)
+    { 
+      xhr.open("GET", "/gpio?output=" + element.id + "&state=1", true); 
+      sclk_state.innerHTML = "manual";
+    }
+    else 
+    { 
+      xhr.open("GET", "/gpio?output=" + element.id + "&state=0", true); 
+      sclk_state.innerHTML = "automatic";
+    }
+    xhr.send();
+  }
+</script>
+
+<p> </p>
+<button class="button pulse_button" onclick="pulseCLK(this)" id="pulse_button"> Pulse Clock </button>
+<script>  
+  function pulseCLK(element)
+  {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "/gpio?button=" + element.id, true);
+    xhr.send();
+  }
+</script>
+
+<div class="slidecontainer">
+  <input type="range" min="0" max="1000" value="0" step="1" class="slider" id="freqSlider">
+  <p>Value: <span id="freqValue"></span> Hz</p>
+</div>
+<script>
+  var slider = document.getElementById("freqSlider");
+  var output = document.getElementById("freqValue");
+  output.innerHTML = slider.value;
+
+  slider.oninput = function()
+  {
+    var xhr = new XMLHttpRequest();
+
+    output.innerHTML = slider.value;
+    xhr.open("GET", "/gpio?slider=" + slider.id + "&value=" + slider.value, true);
+    xhr.send();
+  }
+</script>
+</div><!---------------------- container-CLK_CONTROL ---------------------->
+
+<div class="container-PROG_SELECT"><!---------------------- container-PROG_SELECT ---------------------->
+  <p>PROG_SEL</p>
+  <label for="prog_select"></label>
+  <select name="prog_select" id="progSel_select">
+    <option value="fibonacci">Fibonacci Series</option>
+    <option value="addUntilOverflow">Add 1 until Overflow</option>
+    <option value="7x12">Multiply 7 by 12</option>
+    <option value="NOP">NOP</option>
+  </select>
+  <br>
+  <button input class="button progSel_button" onclick="progSel(this)" id="progSel_button"> Select Prog </button>
+  <script>
+    function progSel(element) 
+    {
+      var xhr = new XMLHttpRequest();
+      var prog = document.getElementById("progSel_select");
+      xhr.open("GET", "/progSel?name=" + element.id + "&value=" + prog.value, true);
+      xhr.send();
+    }
+  </script>
+</div><!---------------------- container-PROG_SELECT ---------------------->
+
+<div class="container-RAM_PROG"><!---------------------- container-RAM_PROG ---------------------->
+  <label for="RAM_0">RAM_0: </label>
+  <input type="text" id="RAM_0" name="RAM_0"><br>
+  <label for="RAM_1">RAM_1: </label>
+  <input type="text" id="RAM_1" name="RAM_1"><br>
+  <label for="RAM_2">RAM_2: </label>
+  <input type="text" id="RAM_2" name="RAM_2"><br>
+  <label for="RAM_3">RAM_3: </label>
+  <input type="text" id="RAM_3" name="RAM_3"><br>
+  <label for="RAM_4">RAM_4: </label>
+  <input type="text" id="RAM_4" name="RAM_4"><br>
+  <label for="RAM_5">RAM_5: </label>
+  <input type="text" id="RAM_5" name="RAM_5"><br>
+  <label for="RAM_6">RAM_6: </label>
+  <input type="text" id="RAM_6" name="RAM_6"><br>
+  <label for="RAM_7">RAM_7: </label>
+  <input type="text" id="RAM_7" name="RAM_7"><br>
+  <label for="RAM_8">RAM_8: </label>
+  <input type="text" id="RAM_8" name="RAM_8"><br>
+  <label for="RAM_9">RAM_9: </label>
+  <input type="text" id="RAM_9" name="RAM_9"><br>
+  <label for="RAM_A">RAM_A: </label>
+  <input type="text" id="RAM_A" name="RAM_A"><br>
+  <label for="RAM_B">RAM_B: </label>
+  <input type="text" id="RAM_B" name="RAM_B"><br>
+  <label for="RAM_C">RAM_C: </label>
+  <input type="text" id="RAM_C" name="RAM_C"><br>
+  <label for="RAM_D">RAM_D: </label>
+  <input type="text" id="RAM_D" name="RAM_D"><br>
+  <label for="RAM_E">RAM_E: </label>
+  <input type="text" id="RAM_E" name="RAM_E"><br>
+  <label for="RAM_F">RAM_F: </label>
+  <input type="text" id="RAM_F" name="RAM_F"><br>
+
+  <button class="button reprogramm_button" onclick="reprogramm(this)" id="reprogramm_button"> Reprogramm </button>
+
+</div><!---------------------- container-RAM_PROG ---------------------->
+
+</div><!---------------------- flex-container ---------------------->
+
+</html>
